@@ -26,7 +26,7 @@ local Config = {
     ConfigRoot = "theseus/configs",
     KeyCache = "theseus/key.txt",
     DefaultAssets = {
-        logo = "https://raw.githubusercontent.com/ntpworkstation/Theseus/refs/heads/main/logo.pngg",
+        logo = "https://raw.githubusercontent.com/ntpworkstation/Theseus/refs/heads/main/logo.png",
         logo_halloween = "https://raw.githubusercontent.com/ntpworkstation/Theseus/refs/heads/main/logo.png",
     },
     SeasonTheme = "Zeus",
