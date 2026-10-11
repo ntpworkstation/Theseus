@@ -96,7 +96,7 @@ Theseus.Config = {
     UpdateLog = {
         { "2026-10-11", "Update Train X100 By Theseus" },
     },
-    UiSource = "https://raw.githubusercontent.com/ntpworkstation/TheseusHubz/refs/heads/main/ui.lua",
+    UiSource = "https://raw.githubusercontent.com/ntpworkstation/Theseus/refs/heads/main/ui.lua",
     ReloadSource = [[
 if not game:IsLoaded() then game.Loaded:Wait() end
 task.wait(2)
