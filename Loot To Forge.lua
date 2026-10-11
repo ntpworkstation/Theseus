@@ -3064,7 +3064,7 @@ local function BuildInterface()
 
     local function BuildProgress(tab)
         local trainBox = tab:AddLeftGroupbox(T("Training", "ฝึก"))
-        Feature(trainBox, "AutoTrain", T("Auto Train", "ฝึกอัตโนมัติ"), T("Trains at the best area nonstop and drinks your potions", "ฝึกโซนดีสุดไม่หยุด ใช้ยาให้เอง"), function(value)
+        Feature(trainBox, "AutoTrain", T("x100 Without Standing", "x100 โดยไม่ต้องยืนนิ่ง"), T("Trains at x100 without standing at the training point", "ฝึก x100 โดยไม่ต้องยืนอยู่จุดเทรน"), function(value)
             task.spawn(Theseus.Util.Try, Theseus.Level.SetTraining, value)
         end)
         local autoClick = Feature(trainBox, "AutoClick", T("Auto Click", "คลิกอัตโนมัติ"), T("Clicks to train as fast as the game allows", "คลิกฝึกเร็วสุดเท่าที่เกมยอม"), function(value)
