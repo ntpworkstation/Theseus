@@ -22,7 +22,7 @@ local Library = {
 local Config = {
     GuiAttribute = "TheseusHubUI",
     Root = "theseus",
-    AssetDir = "theseus/assets",
+    AssetDir = "theseus/assets_v2",
     ConfigRoot = "theseus/configs",
     KeyCache = "theseus/key.txt",
     DefaultAssets = {
@@ -1070,12 +1070,10 @@ end
 function Draw.Emblem(parent, size)
     local holder = Draw.New("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(size, size), Parent = parent })
     local picture = Draw.New("ImageLabel", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ScaleType = Enum.ScaleType.Fit, Visible = false, Parent = holder })
-    local drawn = Draw.DrawnEmblem(holder, size)
     Theme.OnRender(holder, function()
         local content = (Theme.Colors.Logo and Assets.Resolve(Theme.Colors.Logo)) or Assets.Resolve("logo")
         picture.Image = content or ""
         picture.Visible = content ~= nil
-        drawn.Visible = content == nil
         picture.Size = UDim2.fromScale(Theme.Colors.Logo and 1.25 or 1, Theme.Colors.Logo and 1.25 or 1)
     end)
     Anim.Tween(picture, { Rotation = 6 }, 1.6, "Sine", -1, true)
