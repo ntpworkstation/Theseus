@@ -26,8 +26,8 @@ local Config = {
     ConfigRoot = "theseus/configs",
     KeyCache = "theseus/key.txt",
     DefaultAssets = {
-        logo = "https://raw.githubusercontent.com/Theseus/Roblox-Scripts/main/logo.png",
-        logo_halloween = "https://raw.githubusercontent.com/Theseus/Roblox-Scripts/main/logo_halloween.png",
+        logo = "https://raw.githubusercontent.com/ntpworkstation/Theseus/refs/heads/main/logo.pngg",
+        logo_halloween = "https://raw.githubusercontent.com/ntpworkstation/Theseus/refs/heads/main/logo.png",
     },
     SeasonTheme = "Zeus",
     FontDir = "theseus/fonts",
