@@ -21,7 +21,6 @@ local Window = UI:CreateWindow({
     Title     = "Theseus",
     SubTitle  = "Ant Empire",
     ToggleKey = Enum.KeyCode.RightShift,
-    Intro     = false,
 })
 
 -- ── Routes ────────────────────────────────────────────────────────────────────
