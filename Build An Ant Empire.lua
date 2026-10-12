@@ -9,21 +9,23 @@
                                                                
 --]]
 
-local HttpService = game:GetService("HttpService")
-local cloneref = (cloneref or clonereference or function(i) return i end)
+local HttpService       = game:GetService("HttpService")
+local cloneref          = (cloneref or clonereference or function(i) return i end)
 local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
 
--- Load Theseus UI
-local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/ntpworkstation/Theseus/refs/heads/main/ui_theseus.lua"))()
+local UI = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/ntpworkstation/Theseus/refs/heads/main/ui_theseus.lua"
+))()
 
 local Window = UI:CreateWindow({
-    Title    = "Theseus",
-    SubTitle = "Ant Empire",
+    Title     = "Theseus",
+    SubTitle  = "Ant Empire",
     ToggleKey = Enum.KeyCode.RightShift,
+    Intro     = false,
 })
 
--- ── Routes ───────────────────────────────────────────────────────────────────
-local EventRoute2 = game:GetService("ReplicatedStorage").WuKong.RemoteActionFunction
+-- ── Routes ────────────────────────────────────────────────────────────────────
+local EventRoute2 = ReplicatedStorage.WuKong.RemoteActionFunction
 local ROUTE       = "/\xE8\x83\x8C\xE5\x8C\x85\xE7\xB3\xBB\xE7\xBB\x9F/\xE8\x83\x8C\xE5\x8C\x85\xE6\xB7\xBB\xE5\x8A\xA0\xE9\x81\x93\xE5\x85\xB7?\xE8\xB4\xAD\xE4\xB9\xB0"
 local ROUTE2      = "/\xE8\xB4\xA7\xE5\xB8\x81/\xE9\x87\x91\xE5\xB8\x81?\xE5\xB1\x9E\xE6\x80\xA7\xE8\xAE\xBE\xE4\xB8\xBA\xE6\x8C\x87\xE5\xAE\x9A\xE5\x80\xBC?\xE8\xB4\xAD\xE4\xB9\xB0"
 local EGG_ROUTE   = "/\xE5\x8A\x9F\xE8\x83\xBD\xE5\x95\x86\xE4\xBA\xBA/\xE8\x8E\xB7\xE5\xBE\x97\xE5\xAE\xA0\xE7\x89\xA9\xE8\x9B\x8B?\xE8\xB4\xAD\xE4\xB9\xB0"
@@ -54,8 +56,7 @@ local function looksFailed(res)
 end
 
 local function parseAmount(text)
-    local n = math.floor(tonumber(text) or 1)
-    return math.max(n, 1)
+    return math.max(math.floor(tonumber(text) or 1), 1)
 end
 
 local function getItemNames()
@@ -113,16 +114,18 @@ end
 table.sort(eggOptions)
 
 -- ── EventBus ──────────────────────────────────────────────────────────────────
-local Event = game:GetService("ReplicatedStorage").Packages.EventBus.RemoteEvent
+local Event = ReplicatedStorage.Packages.EventBus.RemoteEvent
 
 -- ── State ─────────────────────────────────────────────────────────────────────
 local selected      = nil
 local selectedEggId = nil
-local amount        = 1
-local antAmount     = 1
+local itemCount     = 1
+local eggCount      = 1
+local antCount      = 1
 local moneyValue    = 0
 local autoUpRunning = false
-local unlockAmount  = 50
+local unlockSlots   = 50
+local upgradeLevels = 200
 
 local allAttributes = {
     "幸运值", "单抽数量", "蚁后等级",
@@ -130,238 +133,158 @@ local allAttributes = {
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
---  TAB: Misc
+--  TAB + GROUPBOXES
 -- ════════════════════════════════════════════════════════════════════════════
-local Tab = Window:Tab({ Title = "Misc", Icon = "crown" })
+local Tab   = Window:AddTab("Misc", "crown")
+local Left  = Tab:AddLeftGroupbox("Actions")
+local Right = Tab:AddRightGroupbox("Extras")
 
--- ─────────────────────────────────────────────────────────────────────────────
---  Gift Item
--- ─────────────────────────────────────────────────────────────────────────────
-local SecGiftItem = Tab:Section({ Title = "Gift Item" })
-
-local itemDropdown = SecGiftItem:Dropdown({
-    Title         = "Item",
-    Options       = getItemNames(),
-    RefreshButton = true,
-    Refresh       = getItemNames,
-    Callback      = function(v) selected = v end,
+-- ── Gift Item ─────────────────────────────────────────────────────────────────
+Left:AddDropdown("ItemSelect", {
+    Text       = "Gift Item — Select",
+    Values     = getItemNames(),
+    Default    = nil,
+    AllowNull  = true,
+    Searchable = true,
+    Callback   = function(v) selected = v end,
 })
-
-local itemCountBox = SecGiftItem:Textbox({
-    Title       = "Count",
-    Description = "จำนวน item ที่จะเสก",
+Left:AddInput("ItemCount", {
+    Text        = "Gift Item — Count",
     Default     = "1",
     Placeholder = "1",
-    Callback    = function(v) amount = parseAmount(v) end,
+    Numeric     = true,
+    Callback    = function(v) itemCount = parseAmount(v) end,
 })
+Left:AddButton({ Text = "Gift Item", Func = function()
+    if not selected then
+        return UI:Notify({ Title = "Gift", Content = "เลือก item ก่อน", Type = "Error", Duration = 3 })
+    end
+    local ok, res = buyOnce(selected, itemCount)
+    UI:Notify({
+        Title    = ok and "Gift Item" or "Failed",
+        Content  = ok and (selected .. " x" .. itemCount .. " → " .. describe(res)) or tostring(res),
+        Type     = (not ok or looksFailed(res)) and "Error" or "Success",
+        Duration = 4,
+    })
+end })
 
-SecGiftItem:Button({
-    Title    = "Gift Item",
-    Callback = function()
-        if not selected then
-            return UI:Notify({ Title = "Gift", Content = "เลือก item ก่อน", Type = "Error", Duration = 3 })
-        end
-        amount = parseAmount(itemCountBox.Get())
-        local ok, res = buyOnce(selected, amount)
-        print("[gift]", selected, "x" .. amount, ok, describe(res))
-        if not ok then
-            UI:Notify({ Title = "Failed", Content = tostring(res), Type = "Error", Duration = 4 })
-        else
-            UI:Notify({
-                Title    = "Success",
-                Content  = selected .. " x" .. amount .. " → " .. describe(res),
-                Type     = looksFailed(res) and "Error" or "Success",
-                Duration = 4,
-            })
-        end
-    end,
+-- ── Gift Egg ──────────────────────────────────────────────────────────────────
+Left:AddDropdown("EggSelect", {
+    Text       = "Gift Egg — Select",
+    Values     = eggOptions,
+    Default    = nil,
+    AllowNull  = true,
+    Searchable = true,
+    Callback   = function(v) selectedEggId = nameToIdMap[v] end,
 })
-
--- ─────────────────────────────────────────────────────────────────────────────
---  Gift Egg
--- ─────────────────────────────────────────────────────────────────────────────
-local SecGiftEgg = Tab:Section({ Title = "Gift Egg" })
-
-SecGiftEgg:Dropdown({
-    Title    = "Select Egg",
-    Options  = eggOptions,
-    Callback = function(v) selectedEggId = nameToIdMap[v] end,
-})
-
-local eggCountBox = SecGiftEgg:Textbox({
-    Title       = "Count",
-    Description = "จำนวน egg ที่จะเสก",
+Left:AddInput("EggCount", {
+    Text        = "Gift Egg — Count",
     Default     = "1",
     Placeholder = "1",
-    Callback    = function(v) amount = parseAmount(v) end,
+    Numeric     = true,
+    Callback    = function(v) eggCount = parseAmount(v) end,
 })
+Left:AddButton({ Text = "Gift Egg", Func = function()
+    if not selectedEggId then
+        return UI:Notify({ Title = "Gift", Content = "เลือก egg ก่อน", Type = "Error", Duration = 3 })
+    end
+    local ok, res = buyEggOnce(selectedEggId, eggCount)
+    UI:Notify({
+        Title    = ok and "Gift Egg" or "Failed",
+        Content  = ok and (selectedEggId .. " x" .. eggCount .. " → " .. describe(res)) or tostring(res),
+        Type     = (not ok or looksFailed(res)) and "Error" or "Success",
+        Duration = 4,
+    })
+end })
 
-SecGiftEgg:Button({
-    Title    = "Gift Egg",
-    Callback = function()
-        if not selectedEggId then
-            return UI:Notify({ Title = "Gift", Content = "เลือก egg ก่อน", Type = "Error", Duration = 3 })
-        end
-        amount = parseAmount(eggCountBox.Get())
-        local ok, res = buyEggOnce(selectedEggId, amount)
-        print("[gift egg]", selectedEggId, "x" .. amount, ok, describe(res))
-        if not ok then
-            UI:Notify({ Title = "Failed", Content = tostring(res), Type = "Error", Duration = 4 })
-        else
-            UI:Notify({
-                Title    = "Success",
-                Content  = selectedEggId .. " x" .. amount .. " → " .. describe(res),
-                Type     = looksFailed(res) and "Error" or "Success",
-                Duration = 4,
-            })
-        end
-    end,
-})
-
--- ─────────────────────────────────────────────────────────────────────────────
---  Give Ant
--- ─────────────────────────────────────────────────────────────────────────────
-local SecAnt = Tab:Section({ Title = "Give Ant" })
-
-local antCountBox = SecAnt:Textbox({
-    Title       = "Count",
-    Description = "จำนวนมดที่จะเสก",
+-- ── Give Ant ──────────────────────────────────────────────────────────────────
+Left:AddInput("AntCount", {
+    Text        = "Give Ant — Count",
     Default     = "1",
     Placeholder = "1",
-    Callback    = function(v) antAmount = parseAmount(v) end,
+    Numeric     = true,
+    Callback    = function(v) antCount = parseAmount(v) end,
 })
+Left:AddButton({ Text = "Give Ant", Func = function()
+    local ok, res = giveAnt(antCount)
+    UI:Notify({
+        Title    = ok and "Give Ant" or "Failed",
+        Content  = ok and ("x" .. antCount .. " → " .. describe(res)) or tostring(res),
+        Type     = (not ok or looksFailed(res)) and "Error" or "Success",
+        Duration = 4,
+    })
+end })
 
-SecAnt:Button({
-    Title       = "Give Ant",
-    Description = "best ant in game",
-    Callback    = function()
-        antAmount = parseAmount(antCountBox.Get())
-        local ok, res = giveAnt(antAmount)
-        if not ok then
-            UI:Notify({ Title = "Failed", Content = tostring(res), Type = "Error", Duration = 4 })
-        else
-            UI:Notify({
-                Title    = "Give Ant",
-                Content  = "x" .. antAmount .. " → " .. describe(res),
-                Type     = looksFailed(res) and "Error" or "Success",
-                Duration = 4,
-            })
-        end
-    end,
-})
-
--- ─────────────────────────────────────────────────────────────────────────────
---  Set Money
--- ─────────────────────────────────────────────────────────────────────────────
-local SecMoney = Tab:Section({ Title = "Set Money" })
-
-local moneyBox = SecMoney:Textbox({
-    Title       = "Amount",
-    Description = "จำนวนเงินที่ต้องการ",
-    Placeholder = "เช่น 999999999",
-    Callback    = function(text)
-        local n = tonumber(text)
+-- ── Set Money ─────────────────────────────────────────────────────────────────
+Left:AddInput("MoneyAmount", {
+    Text        = "Set Money — Amount",
+    Placeholder = "999999999",
+    Numeric     = true,
+    Callback    = function(v)
+        local n = tonumber(v)
         if n then moneyValue = n end
     end,
 })
+Left:AddButton({ Text = "Set Money", Func = function()
+    if moneyValue > 0 then
+        EventRoute2:InvokeServer(ROUTE2, moneyValue)
+        UI:Notify({ Title = "Set Money", Content = "ตั้งเป็น " .. moneyValue, Type = "Success", Duration = 5 })
+    else
+        UI:Notify({ Title = "Failed", Content = "กรอกจำนวนก่อน", Type = "Error", Duration = 4 })
+    end
+end })
 
-SecMoney:Button({
-    Title    = "Set Money",
-    Callback = function()
-        moneyValue = tonumber(moneyBox.Get()) or moneyValue
-        if moneyValue > 0 then
-            EventRoute2:InvokeServer(ROUTE2, moneyValue)
-            UI:Notify({ Title = "Set Money", Content = "ตั้งเป็น " .. moneyValue, Type = "Success", Duration = 5 })
-        else
-            UI:Notify({ Title = "Failed", Content = "กรอกจำนวนก่อน", Type = "Error", Duration = 4 })
-        end
-    end,
-})
+-- ── Rollback ──────────────────────────────────────────────────────────────────
+Right:AddButton({ Text = "Rollback", Func = function()
+    Event:FireServer("ECS_COMMAND", "SellPlayerFood", {
+        Source     = "PlayerFoodPrompt",
+        FoodAmount = tonumber("nan"),
+    })
+    UI:Notify({ Title = "Rollback", Content = "Success!", Type = "Success", Duration = 5 })
+end })
 
--- ─────────────────────────────────────────────────────────────────────────────
---  Rollback
--- ─────────────────────────────────────────────────────────────────────────────
-local SecRollback = Tab:Section({ Title = "Rollback" })
-
-SecRollback:Button({
-    Title    = "Rollback",
-    Callback = function()
-        Event:FireServer("ECS_COMMAND", "SellPlayerFood", {
-            Source     = "PlayerFoodPrompt",
-            FoodAmount = tonumber("nan"),
-        })
-        UI:Notify({ Title = "Rollback", Content = "Success!", Type = "Success", Duration = 5 })
-    end,
-})
-
--- ─────────────────────────────────────────────────────────────────────────────
---  Unlock Base
--- ─────────────────────────────────────────────────────────────────────────────
-local SecUnlock = Tab:Section({ Title = "Unlock Base" })
-
-local unlockBox = SecUnlock:Textbox({
-    Title       = "Slots",
-    Description = "จำนวน slot ที่จะปลดล็อค",
+-- ── Unlock Base ───────────────────────────────────────────────────────────────
+Right:AddInput("UnlockSlots", {
+    Text        = "Unlock Base — Slots",
     Default     = "50",
     Placeholder = "50",
-    Callback    = function(v)
-        unlockAmount = math.max(math.floor(tonumber(v) or 50), 1)
-    end,
+    Numeric     = true,
+    Callback    = function(v) unlockSlots = math.max(math.floor(tonumber(v) or 50), 1) end,
 })
+Right:AddButton({ Text = "Unlock Base", Func = function()
+    for i = 1, unlockSlots do
+        Event:FireServer("ECS_COMMAND", "AddAntSlot", {
+            SlotIndex = i, RoomIndex = 1, Source = "ProximityPrompt",
+        })
+    end
+    UI:Notify({ Title = "Unlock Base", Content = "ปลดล็อค " .. unlockSlots .. " slots!", Type = "Success", Duration = 5 })
+end })
 
-SecUnlock:Button({
-    Title       = "Unlock Base",
-    Description = "ปลดล็อค ant slots",
-    Callback    = function()
-        unlockAmount = math.max(math.floor(tonumber(unlockBox.Get()) or 50), 1)
-        for i = 1, unlockAmount do
-            Event:FireServer("ECS_COMMAND", "AddAntSlot", {
-                SlotIndex = i,
-                RoomIndex = 1,
-                Source    = "ProximityPrompt",
-            })
-        end
-        UI:Notify({ Title = "Unlock Base", Content = "ปลดล็อค " .. unlockAmount .. " slots!", Type = "Success", Duration = 5 })
-    end,
-})
-
--- ─────────────────────────────────────────────────────────────────────────────
---  Auto Upgrade
--- ─────────────────────────────────────────────────────────────────────────────
-local SecAutoUp = Tab:Section({ Title = "Auto Upgrade" })
-
-local upLevelsBox = SecAutoUp:Textbox({
-    Title       = "Levels",
-    Description = "จำนวน level ที่จะ upgrade",
+-- ── Auto Upgrade ──────────────────────────────────────────────────────────────
+Right:AddInput("UpgradeLevels", {
+    Text        = "Auto Upgrade — Levels",
     Default     = "200",
     Placeholder = "200",
-    Callback    = function(v) end,
+    Numeric     = true,
+    Callback    = function(v) upgradeLevels = math.max(math.floor(tonumber(v) or 200), 1) end,
 })
-
-SecAutoUp:Button({
-    Title       = "Auto Upgrade",
-    Description = "Upgrade all attributes",
-    Callback    = function()
-        if autoUpRunning then
-            return UI:Notify({ Title = "Auto Upgrade", Content = "กำลัง run อยู่!", Type = "Error", Duration = 3 })
-        end
-        local levels = math.max(math.floor(tonumber(upLevelsBox.Get()) or 200), 1)
-        autoUpRunning = true
-        UI:Notify({ Title = "Auto Upgrade", Content = "เริ่มแล้ว! " .. levels .. " levels", Type = "Success", Duration = 3 })
-        task.spawn(function()
-            for i = 1, levels do
-                for _, attrName in ipairs(allAttributes) do
-                    Event:FireServer("ECS_COMMAND", "UpgradePlayerAttribute", {
-                        AttributeName = attrName,
-                    })
-                end
-                task.wait(0.05)
+Right:AddButton({ Text = "Auto Upgrade", Func = function()
+    if autoUpRunning then
+        return UI:Notify({ Title = "Auto Upgrade", Content = "กำลัง run อยู่!", Type = "Error", Duration = 3 })
+    end
+    autoUpRunning = true
+    UI:Notify({ Title = "Auto Upgrade", Content = "เริ่มแล้ว! " .. upgradeLevels .. " levels", Type = "Success", Duration = 3 })
+    task.spawn(function()
+        for i = 1, upgradeLevels do
+            for _, attrName in ipairs(allAttributes) do
+                Event:FireServer("ECS_COMMAND", "UpgradePlayerAttribute", { AttributeName = attrName })
             end
-            autoUpRunning = false
-            UI:Notify({ Title = "Auto Upgrade", Content = "Done!", Type = "Success", Duration = 4 })
-        end)
-    end,
-})
+            task.wait(0.05)
+        end
+        autoUpRunning = false
+        UI:Notify({ Title = "Auto Upgrade", Content = "Done!", Type = "Success", Duration = 4 })
+    end)
+end })
 
 -- ════════════════════════════════════════════════════════════════════════════
 UI:Notify({ Title = "Theseus", Content = "Loaded! Ant Empire", Type = "Success", Duration = 5 })
